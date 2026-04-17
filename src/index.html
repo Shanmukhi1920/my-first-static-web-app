@@ -1,17 +1,463 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-  <title>Vanilla JavaScript App</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Land Acquisition — Sixth Element Homes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0ede8;
+    padding: 24px;
+    color: #333;
+  }
+  h1.page-title { font-size: 22px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; }
+  p.page-subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+
+  .filter-bar {
+    background: white; border-radius: 10px; padding: 14px 20px;
+    margin-bottom: 18px; display: flex; flex-wrap: wrap;
+    align-items: center; gap: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .filter-bar label { font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.4px; }
+  .filter-bar select {
+    border: 1px solid #ddd; border-radius: 6px; padding: 5px 10px;
+    font-size: 13px; color: #333; background: #fafafa; cursor: pointer; min-width: 180px;
+  }
+  .filter-bar select:focus { outline: none; border-color: #1a73e8; }
+  .filter-bar button {
+    padding: 5px 14px; font-size: 12px; font-weight: 600;
+    border-radius: 6px; border: 1px solid #ef9a9a;
+    background: #fdecea; cursor: pointer; color: #c62828;
+  }
+  .filter-bar button:hover { background: #fcc; }
+
+  .top-controls { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; }
+  .top-controls button {
+    background: white; border: 1px solid #ccc; border-radius: 6px;
+    padding: 6px 14px; font-size: 13px; cursor: pointer; color: #555;
+  }
+  .top-controls button:hover { background: #f5f5f5; }
+
+  .section-card {
+    background: white; border-radius: 12px; padding: 20px 24px;
+    margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+  }
+  .section-title-group { display: flex; align-items: center; gap: 10px; }
+  .folder-icon-lg { font-size: 22px; }
+  .section-title { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+  .section-header-right { display: flex; align-items: center; gap: 8px; }
+
+  .badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .badge-orange { background:#fff0e0; color:#e07800; border:1px solid #f5c070; }
+  .badge-red    { background:#fdecea; color:#c62828; border:1px solid #ef9a9a; }
+  .badge-blue   { background:#e3f0ff; color:#1565c0; border:1px solid #90caf9; }
+  .badge-teal   { background:#e0f7fa; color:#00695c; border:1px solid #80cbc4; }
+  .toggle-btn { font-size: 15px; color: #999; }
+
+  .section-body { margin-top: 16px; }
+  .section-body.collapsed { display: none; }
+
+  .meta-legend {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+    padding-bottom: 12px; border-bottom: 1px solid #f0f0f0; align-items: center;
+  }
+  .meta-legend span { font-size: 11px; color: #777; font-weight: 500; }
+
+  .meta-pill {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 10px; letter-spacing: 0.3px;
+  }
+  .pill-community  { background: #e8f4fd; color: #1565c0; }
+  .pill-discipline { background: #fef3e2; color: #b45309; }
+  .pill-doctype    { background: #f0fdf4; color: #166534; }
+
+  .folder-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid #f5f5f5;
+  }
+  .folder-row:last-of-type { border-bottom: none; }
+  .folder-row.row-hidden { display: none; }
+  .folder-icon-sm { font-size: 16px; flex-shrink: 0; }
+  .folder-info { flex: 1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .folder-name { font-size: 14px; font-weight: 600; color: #1a73e8; text-decoration: none; }
+  .folder-name:hover { text-decoration: underline; }
+  .folder-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .no-results { font-size: 13px; color: #bbb; padding: 12px 0; font-style: italic; display: none; }
+</style>
 </head>
-
 <body>
-  <main>
-    <h1>Vanilla JavaScript App</h1>
-  </main>
-</body>
 
+<h1 class="page-title">🏗️ Land Acquisition</h1>
+<p class="page-subtitle">Sixth Element Homes · Filter by Community or Document Type</p>
+
+<div class="filter-bar">
+  <label>Community</label>
+  <select id="filter-community" onchange="applyFilters()">
+    <option value="">All Communities</option>
+  </select>
+
+  <label>Discipline / Doc. Type</label>
+  <select id="filter-secondary" onchange="applyFilters()">
+    <option value="">All Types</option>
+    <optgroup label="── Discipline (Due Diligence)">
+      <option value="Title_Survey">Title Survey</option>
+      <option value="Environmental">Environmental</option>
+      <option value="Geotechnical">Geotechnical</option>
+      <option value="Utilities">Utilities</option>
+    </optgroup>
+    <optgroup label="── Doc. Type (Contracts)">
+      <option value="PSA_Amendments">PSA Amendments</option>
+      <option value="Earnest_Money_Extensions">Earnest Money Extensions</option>
+      <option value="Closing_Documents">Closing Docs</option>
+      <option value="Seller_Correspondence">Seller Correspondence</option>
+    </optgroup>
+    <optgroup label="── Doc. Type (Market Research)">
+      <option value="DFW_Market_Reports">DFW Market Reports</option>
+      <option value="SubMarket_Analysis">SubMarket Analysis</option>
+      <option value="Aerials_Imagery">Aerials Imagery</option>
+      <option value="Topography_GIS_Layers">Topography GIS Layers</option>
+      <option value="Flood_Drainage_Maps">Flood Drainage Maps</option>
+    </optgroup>
+  </select>
+
+  <button onclick="clearFilters()">✕ Clear Filters</button>
+</div>
+
+<div class="top-controls">
+  <button onclick="expandAll()">▼ Expand All</button>
+  <button onclick="collapseAll()">▲ Collapse All</button>
+</div>
+
+<script>
+
+  /* ============================================================
+     ✏️ ADD / REMOVE COMMUNITIES HERE
+  ============================================================ */
+  const COMMUNITIES = [
+    "Radiant Springs",
+    "Lotus Creek Estates",
+    "Golden Estates",
+    "Weston Field Estates",
+    "McKinney 75AC",
+    "McKinney 50AC",
+    "McKinney 27AC",
+    "McKinney 62AC",
+    "Heartland"
+  ];
+
+  /* ============================================================
+     ✏️ YOUR 4 SHAREPOINT LIBRARY URLs
+  ============================================================ */
+  const LIBRARY_URLS = {
+    "site-eval":
+      "https://6thelementhomes.sharepoint.com/sites/SEH-Land-Archive/Site%20Evaluation%20Packages/Forms/AllItems.aspx",
+    "due-diligence":
+      "https://6thelementhomes.sharepoint.com/sites/SEH-Land-Archive/Due%20Diligence%20Documents/Forms/AllItems.aspx",
+    "contracts":
+      "https://6thelementhomes.sharepoint.com/sites/SEH-Land-Archive/Purchase%20Agreements%20%20Contracts/Forms/AllItems.aspx",
+    "market":
+      "https://6thelementhomes.sharepoint.com/sites/SEH-Land-Archive/Market%20Research%20%20GIS/Forms/AllItems.aspx"
+  };
+
+  /* ============================================================
+     ✏️ SHAREPOINT COLUMN NAMES (must match exactly)
+  ============================================================ */
+  const COLUMNS = {
+    community:  "Community",
+    discipline: "Discipline",
+    doctype:    "DocType"
+  };
+
+  /* ============================================================
+     TAG VALUES — must match SharePoint stored values exactly
+     
+     For the "market" library, tags listed in NO_COMMUNITY_TAGS
+     will render as a single row (no per-community breakdown).
+  ============================================================ */
+  const LIBRARY_TAGS = {
+    "site-eval":     { type: "none", values: [] },
+    "due-diligence": { type: "discipline", values: [
+      "Title_Survey", "Environmental", "Geotechnical", "Utilities"
+    ]},
+    "contracts":     { type: "doctype", values: [
+      "PSA_Amendments", "Earnest_Money_Extensions", "Closing_Documents", "Seller_Correspondence"
+    ]},
+    "market":        { type: "doctype", values: [
+      "DFW_Market_Reports", "SubMarket_Analysis", "Aerials_Imagery",
+      "Topography_GIS_Layers", "Flood_Drainage_Maps"
+    ]}
+  };
+
+  /* Tags in this set will NOT be split by community — one row each */
+  const NO_COMMUNITY_TAGS = new Set([
+    "DFW_Market_Reports",
+    "SubMarket_Analysis"
+  ]);
+
+</script>
+
+<!-- ── Library 1: Site Evaluation Packages ── -->
+<div class="section-card" id="lib-site-eval">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title-group">
+      <span class="folder-icon-lg">📁</span>
+      <a href="https://6thelementhomes.sharepoint.com/sites/LandAcquisitions/Site%20Evaluation%20Packages/Forms/AllItems.aspx" target="_blank" class="section-title-link" onclick="event.stopPropagation()">
+  <span class="section-title">Site Evaluation Packages</span>
+</a>
+    </div>
+    <div class="section-header-right">
+      <span class="toggle-btn">▲</span>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="meta-legend">
+      <span>Metadata:</span>
+      <span class="meta-pill pill-community">Community</span>
+    </div>
+    <div class="rows-container"></div>
+    <div class="no-results">No documents match the selected filters.</div>
+  </div>
+</div>
+
+<!-- ── Library 2: Due Diligence ── -->
+<div class="section-card" id="lib-due-diligence">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title-group">
+      <span class="folder-icon-lg">📁</span>
+      <a href="https://6thelementhomes.sharepoint.com/sites/LandAcquisitions/Due%20Diligence%20Documents/Forms/AllItems.aspx" target="_blank" class="section-title-link" onclick="event.stopPropagation()">
+  <span class="section-title">Due Diligence</span>
+</a>
+    </div>
+    <div class="section-header-right">
+      <span class="toggle-btn">▲</span>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="meta-legend">
+      <span>Metadata:</span>
+      <span class="meta-pill pill-community">Community</span>
+      <span class="meta-pill pill-discipline">Discipline</span>
+    </div>
+    <div class="rows-container"></div>
+    <div class="no-results">No documents match the selected filters.</div>
+  </div>
+</div>
+
+<!-- ── Library 3: Purchase Agreements & Contracts ── -->
+<div class="section-card" id="lib-contracts">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title-group">
+      <span class="folder-icon-lg">📁</span>
+      <a href="https://6thelementhomes.sharepoint.com/sites/LandAcquisitions/Purchase%20Agreements%20%20Contracts/Forms/AllItems.aspx" target="_blank" class="section-title-link" onclick="event.stopPropagation()">
+  <span class="section-title">Purchase Agreements & Contracts</span>
+</a>
+    </div>
+    <div class="section-header-right">
+      <span class="toggle-btn">▲</span>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="meta-legend">
+      <span>Metadata:</span>
+      <span class="meta-pill pill-community">Community</span>
+      <span class="meta-pill pill-doctype">Doc. Type</span>
+    </div>
+    <div class="rows-container"></div>
+    <div class="no-results">No documents match the selected filters.</div>
+  </div>
+</div>
+
+<!-- ── Library 4: Market Research & GIS ── -->
+<div class="section-card" id="lib-market">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title-group">
+      <span class="folder-icon-lg">📁</span>
+      <a href="https://6thelementhomes.sharepoint.com/sites/LandAcquisitions/Market%20Research%20%20GIS/Forms/AllItems.aspx" target="_blank" class="section-title-link" onclick="event.stopPropagation()">
+  <span class="section-title">Market Research & GIS</span>
+</a>
+    </div>
+    <div class="section-header-right">
+      <span class="toggle-btn">▲</span>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="meta-legend">
+      <span>Metadata:</span>
+      <span class="meta-pill pill-community">Community</span>
+      <span class="meta-pill pill-doctype">Doc. Type</span>
+    </div>
+    <div class="rows-container"></div>
+    <div class="no-results">No documents match the selected filters.</div>
+  </div>
+</div>
+
+<script>
+  /* ── Populate community dropdown ── */
+  const communitySelect = document.getElementById('filter-community');
+  COMMUNITIES.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    communitySelect.appendChild(opt);
+  });
+
+  /* ── Build filtered SharePoint URL ── */
+  function buildURL(libId, community, tag) {
+    const base = LIBRARY_URLS[libId];
+    if (!base) return '#';
+    const { type } = LIBRARY_TAGS[libId];
+    const params = new URLSearchParams();
+
+    // Only add community filter if community is provided
+    if (community) {
+      params.set('FilterField1', COLUMNS.community);
+      params.set('FilterValue1', community);
+      params.set('FilterType1', 'Text');
+    }
+
+    if (tag) {
+      const col = type === 'discipline' ? COLUMNS.discipline : COLUMNS.doctype;
+      const fieldNum = community ? 2 : 1;
+      params.set('FilterField' + fieldNum, col);
+      params.set('FilterValue' + fieldNum, tag);
+      params.set('FilterType' + fieldNum, 'Choice');
+    }
+
+    return base + (params.toString() ? '?' + params.toString() : '');
+  }
+
+  /* ── Build a single folder row ── */
+  function makeRow(libId, community, tag) {
+    const row = document.createElement('div');
+    row.className = 'folder-row';
+    // For community-less rows, store empty string so community filter doesn't hide them
+    // unless community is actively filtered — handled in applyFilters
+    row.dataset.community = community;
+    row.dataset.secondary = tag;
+    row.dataset.noCommunity = community === '' ? 'true' : 'false';
+
+    const label = community && tag
+      ? `${community} — ${tag.replace(/_/g, ' ')}`
+      : tag
+        ? tag.replace(/_/g, ' ')
+        : community;
+
+    const url = buildURL(libId, community, tag);
+
+    row.innerHTML = `
+      <span class="folder-icon-sm">📄</span>
+      <div class="folder-info">
+        <a class="folder-name" href="${url}" target="_blank">${label}</a>
+      </div>`;
+    return row;
+  }
+
+  /* ── Build all rows ── */
+  function buildRows() {
+    Object.keys(LIBRARY_TAGS).forEach(libId => {
+      const card      = document.getElementById('lib-' + libId);
+      const container = card.querySelector('.rows-container');
+      const { type, values } = LIBRARY_TAGS[libId];
+
+      if (type === 'none') {
+        // Site Eval: one row per community, no tag
+        COMMUNITIES.forEach(community => {
+          container.appendChild(makeRow(libId, community, ''));
+        });
+      } else {
+        values.forEach(tag => {
+          if (NO_COMMUNITY_TAGS.has(tag)) {
+            // Single row, no community breakdown
+            container.appendChild(makeRow(libId, '', tag));
+          } else {
+            // One row per community
+            COMMUNITIES.forEach(community => {
+              container.appendChild(makeRow(libId, community, tag));
+            });
+          }
+        });
+      }
+    });
+  }
+
+  /* ── Filter logic ── */
+  function applyFilters() {
+    const community = document.getElementById('filter-community').value;
+    const secondary = document.getElementById('filter-secondary').value;
+
+    document.querySelectorAll('.section-card').forEach(card => {
+      const rows = card.querySelectorAll('.folder-row');
+      let visible = 0;
+
+      rows.forEach(row => {
+        const isNoCommunity = row.dataset.noCommunity === 'true';
+        const secMatch = !secondary || row.dataset.secondary === secondary;
+
+        let comMatch;
+        if (isNoCommunity) {
+          // Community-less rows: always visible regardless of community filter
+          comMatch = true;
+        } else {
+          comMatch = !community || row.dataset.community === community;
+        }
+
+        if (comMatch && secMatch) {
+          row.classList.remove('row-hidden');
+          visible++;
+        } else {
+          row.classList.add('row-hidden');
+        }
+      });
+
+      card.querySelector('.no-results').style.display = visible === 0 ? 'block' : 'none';
+
+      if (community || secondary) {
+        const body = card.querySelector('.section-body');
+        body.classList.remove('collapsed');
+        card.querySelector('.toggle-btn').textContent = '▲';
+      }
+    });
+  }
+
+  function clearFilters() {
+    document.getElementById('filter-community').value = '';
+    document.getElementById('filter-secondary').value = '';
+    applyFilters();
+  }
+
+  function toggleSection(header) {
+    const body = header.nextElementSibling;
+    const btn  = header.querySelector('.toggle-btn');
+    body.classList.toggle('collapsed');
+    btn.textContent = body.classList.contains('collapsed') ? '▼' : '▲';
+  }
+
+  function expandAll() {
+    document.querySelectorAll('.section-body').forEach(b => {
+      b.classList.remove('collapsed');
+      b.previousElementSibling.querySelector('.toggle-btn').textContent = '▲';
+    });
+  }
+
+  function collapseAll() {
+    document.querySelectorAll('.section-body').forEach(b => {
+      b.classList.add('collapsed');
+      b.previousElementSibling.querySelector('.toggle-btn').textContent = '▼';
+    });
+  }
+
+  /* ── Init ── */
+  buildRows();
+</script>
+</body>
 </html>
